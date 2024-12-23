@@ -34,6 +34,6 @@ copy-to-server:
 	scp service_linux root@90.156.159.110:
 
 docker-build-and-push:
-	docker buildx build --no-cache --platform linux/amd64 -t cr.selcloud.ru/olezhek28/test-server:v0.0.1 .
-	docker login -u token -p CRgAAAAA6ELvdoGnA7EL4qSbkICKeDkVldDC2OOU cr.selcloud.ru/olezhek28
+	docker buildx build --no-cache --platform linux/amd64 -t cr.selcloud.ru/merynayr/test-server:v0.0.1 .
+	docker login -u token -p CRgAAAAA6ELvdoGnA7EL4qSbkICKeDkVldDC2OOU cr.selcloud.ru/merynayr
 	docker push cr.selcloud.ru/olezhek28/test-server:v0.0.1
