@@ -31,7 +31,9 @@ jobs:
           context: .
           push: true
           tags: user/repo:latest
-          run: docker-compose up -d
+
+      – name: Run Docker Compose
+        run: docker-compose up -d
 
   deploy-image:
     runs-on: ubuntu-latest
