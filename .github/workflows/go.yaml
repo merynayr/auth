@@ -29,8 +29,8 @@ jobs:
         run: |
           TAG_NAME=$(echo $GITHUB_SHA | head -c7)
 
-          # Update docker-compose.yml with the new image tag
-          sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|" docker-compose.yml
+          # Update docker-compose.yaml with the new image tag
+          sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|" docker-compose.yaml
 
           # Build and push the image using docker-compose
           docker-compose build
@@ -49,14 +49,8 @@ jobs:
           key: ${{ secrets.SSHKEY }}
           envs: IMAGE_NAME,REGISTRY,GITHUB_SHA,CONTAINER_NAME
           script: |
-            # Установка переменной тега
-            TAG_NAME=$(echo $GITHUB_SHA | head -c7)
-
             # Логин в реестр Docker
             docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
-
-            # Обновление образа в docker-compose.yml
-            sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|" docker-compose.yml
 
             # Остановка текущих контейнеров
             docker-compose stop
