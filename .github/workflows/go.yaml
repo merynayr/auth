@@ -31,7 +31,8 @@ jobs:
           context: .
           push: true
           tags: user/repo:latest
-          
+          run: docker-compose up -d
+
   deploy-image:
     runs-on: ubuntu-latest
     needs: image-build-and-push
