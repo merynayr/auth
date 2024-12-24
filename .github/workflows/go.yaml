@@ -28,8 +28,7 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           TAG_NAME=$(echo $GITHUB_SHA | head -c7)
-          docker compose build --build-arg REGISTRY=$REGISTRY --build-arg IMAGE_NAME=$IMAGE_NAME --build-arg TAG_NAME=$TAG_NAME docker-compose.yml .
-          docker compose push
+          docker-compose -f docker-compose.yml up -d --build-arg TAG_NAME=$TAG_NAME
 
   deploy-image:
     runs-on: ubuntu-latest
