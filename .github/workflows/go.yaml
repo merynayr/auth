@@ -33,7 +33,7 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           TAG_NAME=$(echo $GITHUB_SHA | head -c7)
-          sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|" docker-compose.yaml
+          sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|" docker-compose.yaml .
           docker-compose build
           docker-compose push
   deploy-image:
@@ -54,11 +54,8 @@ jobs:
             
             # Login into Selectel Registry
             docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
-            
-            # Start Docker service
-            service docker start
 
-             # Остановка текущих контейнеров
+            # Остановка текущих контейнеров
             docker-compose stop
 
             # Обновление образов
