@@ -25,10 +25,15 @@ jobs:
       - name: Login to Docker Registry
         run: docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
 
-      - name: Build and Push Docker Image
+      - name: Update Docker Compose Image Tag
         run: |
           TAG_NAME=$(echo $GITHUB_SHA | head -c7)
-          docker compose -f docker-compose.yml up -d --build-arg TAG_NAME=$TAG_NAME
+          sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|" docker-compose.yml
+
+      - name: Build and Push Docker Image Using Docker Compose
+        run: |
+          docker compose build
+          docker compose push
 
   deploy-image:
     runs-on: ubuntu-latest
