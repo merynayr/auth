@@ -25,15 +25,16 @@ jobs:
       - name: Login to Docker Registry
         run: docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
 
-      – name: Build and push Docker images
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags: user/repo:latest
+      - name: Build and Push Docker Image
+        run: |
+          TAG_NAME=$(echo $GITHUB_SHA | head -c7)
 
-      – name: Run Docker Compose
-        run: docker-compose up -d
+          # Update docker-compose.yml with the new image tag
+          sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|" docker-compose.yml
+
+          # Build and push the image using docker-compose
+          docker-compose build
+          docker-compose push
 
   deploy-image:
     runs-on: ubuntu-latest
@@ -50,15 +51,18 @@ jobs:
           script: |
             # Set up variables
             TAG_NAME=$(echo $GITHUB_SHA | head -c7)
-            
+
             # Login into Selectel Registry
             docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
-            
-            # Stop running container
-            docker stop $CONTAINER_NAME
-            
-            # Remove old container
-            docker rm $CONTAINER_NAME
-            
-            # Run a new container from a new image
-            docker run -d -p 50051:50051 --name $CONTAINER_NAME -t $REGISTRY/$IMAGE_NAME:$TAG_NAME
+
+            # Update docker-compose.yml with the new image tag
+            sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|" docker-compose.yml
+
+            # Stop and remove current containers
+            docker-compose down
+
+            # Pull the new image
+            docker-compose pull
+
+            # Start containers with the updated configuration
+            docker-compose up -d
