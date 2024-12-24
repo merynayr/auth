@@ -5,6 +5,11 @@ volumes:
   postgres_volume_prod:
 
 services:
+  auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
   pg-local:
     image: postgres:14-alpine3.17
     env_file:
