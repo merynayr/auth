@@ -41,7 +41,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           port: 22
           key: ${{ secrets.SSHKEY }}
-          source: "./docker-compose.yml,./prod.env, ./local.env, ./migration_local.Dockerfile, ./migration_prod.Dockerfile, ./prod.Dockerfile"
+          source: "./docker-compose.yml,./prod.env, ./local.env,
+           ./migration_local.Dockerfile, ./migration_prod.Dockerfile,
+           ./migration_prod.sh, ./migration_local.sh, ./prod.Dockerfile"
           target: "~/.deploy/${{ github.event.repository.name }}/"
 
       - name: Deploy via SSH
