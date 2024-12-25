@@ -19,14 +19,11 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v3
 
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v3
-        if: ${{ github.event.inputs.version == '' || github.event.inputs.version == 'latest' }}
-        with:
-          file: prod.Dockerfile
-          context: .
-          push: true
-          tags: $(echo $GITHUB_SHA | head -c7)
+      - name: Build and Push Docker Image
+        run: |
+          TAG_NAME=$(echo $GITHUB_SHA | head -c7)
+          docker buildx create --use
+          docker buildx build --no-cache --push --tag $REGISTRY/$IMAGE_NAME:$TAG_NAME -f prod.Dockerfile . 
      
       - name: Upload docker-compose.yml and prod.env
         uses: appleboy/scp-action@v0.1.3
