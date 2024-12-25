@@ -23,7 +23,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Registry
-        run: docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
+        run: docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
 
 
       - name: Build and Push Docker Image
@@ -40,7 +40,6 @@ jobs:
           port: 22
           key: ${{ secrets.SSHKEY }}
           source: "./docker-compose.yml,./prod.env"
-          target: "~/.deploy/${{ github.event.repository.name }}/"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
@@ -50,14 +49,13 @@ jobs:
           key: ${{ secrets.SSHKEY }}
           envs: IMAGE_NAME,REGISTRY,GITHUB_SHA
           script: |
-            cd ~/deployment
             TAG_NAME=$(echo $GITHUB_SHA | head -c7)
             
             # Подставляем текущий TAG_NAME в docker-compose.yml
             sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|g" docker-compose.yml
             
             # Логинимся в реестр
-            docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
+            docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
             
             # Обновляем образы и перезапускаем сервисы
             docker compose pull
