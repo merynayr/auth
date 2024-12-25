@@ -38,7 +38,7 @@ jobs:
       - name: Upload prod.env to Server
         uses: appleboy/scp-action@v0.1.0
         with:
-          file: Dockerfile
+          file: ./Dockerfile
           context: .
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
