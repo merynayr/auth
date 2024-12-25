@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           port: 22
           key: ${{ secrets.SSHKEY }}
-          source: "./docker-compose.yml,./prod.env, ./local.env"
+          source: "./docker-compose.yml,./prod.env, ./local.env, ./migration_local.Dockerfile, ./migration_prod.Dockerfile"
           target: "~/.deploy/${{ github.event.repository.name }}/"
 
       - name: Deploy via SSH
