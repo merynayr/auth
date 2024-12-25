@@ -43,7 +43,8 @@ jobs:
           key: ${{ secrets.SSHKEY }}
           source: "./docker-compose.yml,./prod.env, ./local.env,
            ./migration_local.Dockerfile, ./migration_prod.Dockerfile,
-           ./migration_prod.sh, ./migration_local.sh, ./prod.Dockerfile"
+           ./migration_prod.sh, ./migration_local.sh, 
+           ./migrations, ./prod.Dockerfile"
           target: "~/.deploy/${{ github.event.repository.name }}/"
 
       - name: Deploy via SSH
