@@ -35,6 +35,11 @@ jobs:
           source: "./docker-compose.yml,./prod.env, ./local.env, ./migration_local.Dockerfile, ./migration_prod.Dockerfile, ./prod.Dockerfile"
           target: "~/.deploy/${{ github.event.repository.name }}/"
 
+      - name: Update docker-compose.yml with TAG_NAME
+        run: |
+          TAG_NAME=$(echo $GITHUB_SHA | head -c7)
+          sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|g" ./docker-compose.yml
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
