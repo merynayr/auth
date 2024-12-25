@@ -27,7 +27,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t $REGISTRY/$IMAGE_NAME:${{ github.sha }} .
+          docker build -f ./Dockerfile -t $REGISTRY/$IMAGE_NAME:${{ github.sha }} .
           docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
 
   deploy-image:
@@ -35,6 +35,15 @@ jobs:
     needs: image-build-and-push
 
     steps:
+      - name: Upload docker-compose.yml to Server
+        uses: appleboy/scp-action@v0.1.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSHKEY }}
+          source: ./docker-compose.yml
+          target: ~/docker-compose.yml
+
       - name: Upload prod.env to Server
         uses: appleboy/scp-action@v0.1.0
         with:
@@ -62,8 +71,7 @@ jobs:
             docker pull $REGISTRY/$IMAGE_NAME:$TAG_NAME
             
             # Stop and remove the old container
-            docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
+            docker compose -f ~/docker-compose.yml down || true
             
-            # Start the new container with prod.env
-            docker run -d --env-file ~/prod.env --name $CONTAINER_NAME $REGISTRY/$IMAGE_NAME:$TAG_NAME
+            # Start the new containers with prod.env
+            docker compose -f ~/docker-compose.yml --env-file ~/prod.env up -d
