@@ -35,11 +35,6 @@ jobs:
           source: "./docker-compose.yml,./prod.env, ./local.env, ./migration_local.Dockerfile, ./migration_prod.Dockerfile, ./prod.Dockerfile"
           target: "~/.deploy/${{ github.event.repository.name }}/"
 
-      - name: Update docker-compose.yml with TAG_NAME
-        run: |
-          TAG_NAME=$(echo $GITHUB_SHA | head -c7)
-          sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|g" ./docker-compose.yml
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -49,10 +44,9 @@ jobs:
           envs: IMAGE_NAME,REGISTRY,GITHUB_SHA
           script: |
             cd ~/.deploy/${{ github.event.repository.name }}
-            TAG_NAME=$(echo $GITHUB_SHA | head -c7)
             
             # Подставляем текущий TAG_NAME в docker-compose.yml
-            sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:$TAG_NAME|g" docker-compose.yml
+            sed -i "s|image: .*|image: $REGISTRY/$IMAGE_NAME:latest|g" docker-compose.yml
             
             # Логинимся в реестр
             echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin $REGISTRY
