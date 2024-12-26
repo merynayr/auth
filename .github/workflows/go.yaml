@@ -10,6 +10,7 @@ env:
   REGISTRY: "cr.selcloud.ru/merynayr"
   IMAGE_NAME: "test-server"
   CONTAINER_NAME: "test-server-container"
+  USER: "root"
 
 jobs:
   build:
@@ -53,7 +54,7 @@ jobs:
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSHKEY }}" > ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} > ~/.ssh/known_hosts
-          docker context create remote --docker host=ssh://${{ echo $USER }}@${{ secrets.SERVER_HOST }}
+          docker context create remote --docker host=ssh://${{ env.USER  }}@${{ secrets.SERVER_HOST }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
