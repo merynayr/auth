@@ -73,4 +73,4 @@ jobs:
         env:
           IMAGE_REF: ${{ steps.meta.outputs.tags }}
         run: |
-          docker compose -c docker-compose.yml --context remote up -d
+          docker compose --file docker-compose.yml --context remote up -d
