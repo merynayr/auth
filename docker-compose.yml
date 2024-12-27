@@ -1,21 +1,12 @@
-version: '3'
-
 volumes:
   postgres_volume_local:
   postgres_volume_prod:
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "50052:50052"
-
   pg-local:
     image: postgres:14-alpine3.17
     env_file:
-      - "local.env"
+      - local.env
     ports:
       - "54321:5432"
     volumes:

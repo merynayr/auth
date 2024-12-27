@@ -15,4 +15,4 @@ COPY --from=builder /github.com/merynayr/auth/source/bin/test_server .
 
 COPY prod.env .
 
-CMD ["./test_server", "-config-path=prod.env"]
+CMD ["./test_server", "-config-path=local.env"]

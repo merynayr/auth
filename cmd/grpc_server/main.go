@@ -2,26 +2,25 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"log"
 	"net"
-	"time"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
-	desc "github.com/merynayr/auth/pkg/auth_v1"
+	desc "github.com/merynayr/auth/pkg/user_v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/merynayr/auth/internal/config"
 	"github.com/merynayr/auth/internal/config/env"
+	"github.com/merynayr/auth/internal/converter"
+	"github.com/merynayr/auth/internal/repository"
+	"github.com/merynayr/auth/internal/repository/user"
 )
 
 type server struct {
-	desc.UnimplementedAuthV1Server
-	pool *pgxpool.Pool
+	desc.UnimplementedUserV1Server
+	userRepository repository.UserRepository
 }
 
 var configPath string
@@ -62,9 +61,15 @@ func main() {
 	}
 	defer pool.Close()
 
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatalf("failed to ping to database: %v", err)
+	}
+
+	userRepo := user.NewRepository(pool)
+
 	s := grpc.NewServer()
 	reflection.Register(s)
-	desc.RegisterAuthV1Server(s, &server{pool: pool})
+	desc.RegisterUserV1Server(s, &server{userRepository: userRepo})
 
 	log.Printf("server listening at %v", lis.Addr())
 
@@ -73,76 +78,25 @@ func main() {
 	}
 }
 
-func (s *server) Get(ctx context.Context, req *desc.GetRequest) (*desc.GetResponse, error) {
-	op := "GetUser"
-	log.Printf("[%s] request data | id: %v", op, req.Id)
-	builderGet := sq.Select("id", "username", "email", "role", "created_at", "updated_at").
-		From("users").
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": req.GetId()})
-
-	query, args, err := builderGet.ToSql()
+func (s *server) Create(ctx context.Context, req *desc.CreateUserRequest) (*desc.CreateUserResponse, error) {
+	id, err := s.userRepository.CreateUser(ctx, converter.ToUserFromDescUser(req))
 	if err != nil {
-		log.Printf("%s: failed to create builder: %v", op, err)
-		return nil, err
-	}
-	rows, err := s.pool.Query(ctx, query, args...)
-	if err != nil {
-		log.Printf("%s: failed to select user: %v", op, err)
 		return nil, err
 	}
 
-	var userID int64
-	var username, email string
-	var role int32
-	var createdAt time.Time
-	var updatedAt sql.NullTime
+	log.Printf("inserted note with id: %d", id)
 
-	for rows.Next() {
-		err = rows.Scan(&userID, &username, &email, &role, &createdAt, &updatedAt)
-		if err != nil {
-			log.Printf("%s: failed to scan user: %v", op, err)
-			return nil, err
-		}
-	}
-
-	log.Printf("%s: selected user %d", op, req.Id)
-	return &desc.GetResponse{
-		Auth: &desc.Auth{
-			Id:        userID,
-			Name:      username,
-			Email:     email,
-			Role:      desc.Role(role),
-			CreatedAt: timestamppb.New(createdAt),
-			UpdatedAt: timestamppb.New(updatedAt.Time),
-		},
+	return &desc.CreateUserResponse{
+		Id: id,
 	}, nil
 }
 
-func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
-	op := "CreateUser"
-	log.Printf("%s %v", op, req.GetInfo())
-
-	builderInsert := sq.Insert("users").
-		PlaceholderFormat(sq.Dollar).
-		Columns("username", "email", "password", "role", "created_at").
-		Values(req.Info.Name, req.Info.Email, req.Info.Password, req.Info.GetRole(), time.Now()).
-		Suffix("RETURNING id")
-	query, args, err := builderInsert.ToSql()
+func (s *server) Get(ctx context.Context, req *desc.GetUserRequest) (*desc.GetUserResponse, error) {
+	userObj, err := s.userRepository.GetUser(ctx, req.GetId())
 	if err != nil {
-		log.Printf("%s: failed to create builder: %v", op, err)
 		return nil, err
 	}
 
-	var userID int64
-	err = s.pool.QueryRow(ctx, query, args...).Scan(&userID)
-	if err != nil {
-		log.Printf("%s: failed to insert user: %v", op, err)
-		return nil, err
-	}
+	return converter.ToDescUserFromService(userObj), nil
 
-	log.Printf("%s: inserted user with id: %d", op, userID)
-	return &desc.CreateResponse{
-		Id: userID,
-	}, nil
 }

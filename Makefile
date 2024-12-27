@@ -21,6 +21,18 @@ get-deps:
 	go get -u google.golang.org/protobuf/cmd/protoc-gen-go
 	go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc
 
+generate:
+	make generate-user-api
+
+generate-user-api:
+	mkdir -p pkg/user_v1
+	protoc --proto_path api/user_v1 \
+	--go_out=pkg/user_v1 --go_opt=paths=source_relative \
+	--plugin=protoc-gen-go=bin/protoc-gen-go \
+	--go-grpc_out=pkg/user_v1 --go-grpc_opt=paths=source_relative \
+	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
+	api/user_v1/user.proto
+
 local-migration-status:
 	${LOCAL_BIN}/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} status -v
 
@@ -30,20 +42,10 @@ local-migration-up:
 local-migration-down:
 	${LOCAL_BIN}/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} down -v
 
-generate:
-	make generate-auth-api
-
-generate-auth-api:
-	mkdir -p pkg/auth_v1
-	protoc --proto_path api/auth_v1 \
-	--go_out=pkg/auth_v1 --go_opt=paths=source_relative \
-	--plugin=protoc-gen-go=bin/protoc-gen-go \
-	--go-grpc_out=pkg/auth_v1 --go-grpc_opt=paths=source_relative \
-	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
-	api/auth_v1/auth.proto
-
 build:
 	GOOS=linux GOARCH=amd64 go build -o service_linux cmd/grpc_server/main.go
 
+make run: build
+	./service_linux -config-path=local.env
 copy-to-server:
 	scp service_linux root@90.156.159.110:
