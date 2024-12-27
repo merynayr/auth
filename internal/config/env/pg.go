@@ -15,6 +15,7 @@ type pgConfig struct {
 	dsn string
 }
 
+// NewPGConfig returns new postgres config
 func NewPGConfig() (config.PGConfig, error) {
 	dsn := os.Getenv(dsnEnvName)
 	if len(dsn) == 0 {
@@ -26,6 +27,7 @@ func NewPGConfig() (config.PGConfig, error) {
 	}, nil
 }
 
+// DSN returns a full database's connection string
 func (cfg *pgConfig) DSN() string {
 	return cfg.dsn
 }
