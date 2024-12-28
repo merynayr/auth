@@ -42,12 +42,15 @@ local-migration-up:
 local-migration-down:
 	${LOCAL_BIN}/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} down -v
 
+make dock:
+	docker compose up --build -d
+
 build:
 	GOOS=linux GOARCH=amd64 go build -o service_linux cmd/grpc_server/main.go
 
 make run: build
-	docker compose up --build -d
 	./service_linux -config-path=local.env
+
 
 copy-to-server:
 	scp service_linux root@90.156.159.110:

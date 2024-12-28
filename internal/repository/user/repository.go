@@ -42,7 +42,7 @@ func (r *repo) CreateUser(ctx context.Context, user *model.User) (int64, error) 
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(nameColumn, emailColumn, passwordColumn, roleColumn, createdAtColumn, updatedAtColumn).
-		Values(user.Name, user.Email, user.Password, user.Role, user.CreatedAt, time.Now()).
+		Values(user.Name, user.Email, user.Password, user.Role, time.Now(), user.UpdatedAt).
 		Suffix("RETURNING id")
 
 	query, args, err := builderInsert.ToSql()

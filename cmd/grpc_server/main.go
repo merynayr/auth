@@ -12,18 +12,12 @@ import (
 
 	"github.com/merynayr/auth/internal/config"
 	"github.com/merynayr/auth/internal/config/env"
-	"github.com/merynayr/auth/internal/converter"
-	"github.com/merynayr/auth/internal/service"
 	desc "github.com/merynayr/auth/pkg/user_v1"
 
+	userAPI "github.com/merynayr/auth/internal/api/user"
 	userRepository "github.com/merynayr/auth/internal/repository/user"
 	userService "github.com/merynayr/auth/internal/service/user"
 )
-
-type server struct {
-	desc.UnimplementedUserV1Server
-	userService service.UserService
-}
 
 var configPath string
 
@@ -72,34 +66,11 @@ func main() {
 
 	s := grpc.NewServer()
 	reflection.Register(s)
-	desc.RegisterUserV1Server(s, &server{userService: userSrv})
+	desc.RegisterUserV1Server(s, userAPI.NewAPI(userSrv))
 
 	log.Printf("server listening at %v", lis.Addr())
 
 	if err = s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-}
-
-func (s *server) Create(ctx context.Context, req *desc.CreateUserRequest) (*desc.CreateUserResponse, error) {
-	id, err := s.userService.CreateUser(ctx, converter.ToUserFromDescUser(req))
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf("inserted note with id: %d", id)
-
-	return &desc.CreateUserResponse{
-		Id: id,
-	}, nil
-}
-
-func (s *server) Get(ctx context.Context, req *desc.GetUserRequest) (*desc.GetUserResponse, error) {
-	userObj, err := s.userService.GetUser(ctx, req.GetId())
-	if err != nil {
-		return nil, err
-	}
-
-	return converter.ToDescUserFromService(userObj), nil
-
 }
