@@ -7,20 +7,22 @@ import (
 	"net"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	desc "github.com/merynayr/auth/pkg/user_v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/merynayr/auth/internal/config"
 	"github.com/merynayr/auth/internal/config/env"
 	"github.com/merynayr/auth/internal/converter"
-	"github.com/merynayr/auth/internal/repository"
-	"github.com/merynayr/auth/internal/repository/user"
+	"github.com/merynayr/auth/internal/service"
+	desc "github.com/merynayr/auth/pkg/user_v1"
+
+	userRepository "github.com/merynayr/auth/internal/repository/user"
+	userService "github.com/merynayr/auth/internal/service/user"
 )
 
 type server struct {
 	desc.UnimplementedUserV1Server
-	userRepository repository.UserRepository
+	userService service.UserService
 }
 
 var configPath string
@@ -65,11 +67,12 @@ func main() {
 		log.Fatalf("failed to ping to database: %v", err)
 	}
 
-	userRepo := user.NewRepository(pool)
+	userRepo := userRepository.NewRepository(pool)
+	userSrv := userService.NewService(userRepo)
 
 	s := grpc.NewServer()
 	reflection.Register(s)
-	desc.RegisterUserV1Server(s, &server{userRepository: userRepo})
+	desc.RegisterUserV1Server(s, &server{userService: userSrv})
 
 	log.Printf("server listening at %v", lis.Addr())
 
@@ -79,7 +82,7 @@ func main() {
 }
 
 func (s *server) Create(ctx context.Context, req *desc.CreateUserRequest) (*desc.CreateUserResponse, error) {
-	id, err := s.userRepository.CreateUser(ctx, converter.ToUserFromDescUser(req))
+	id, err := s.userService.CreateUser(ctx, converter.ToUserFromDescUser(req))
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +95,7 @@ func (s *server) Create(ctx context.Context, req *desc.CreateUserRequest) (*desc
 }
 
 func (s *server) Get(ctx context.Context, req *desc.GetUserRequest) (*desc.GetUserResponse, error) {
-	userObj, err := s.userRepository.GetUser(ctx, req.GetId())
+	userObj, err := s.userService.GetUser(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
