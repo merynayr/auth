@@ -46,6 +46,8 @@ build:
 	GOOS=linux GOARCH=amd64 go build -o service_linux cmd/grpc_server/main.go
 
 make run: build
+	docker compose up --build -d
 	./service_linux -config-path=local.env
+
 copy-to-server:
 	scp service_linux root@90.156.159.110:
