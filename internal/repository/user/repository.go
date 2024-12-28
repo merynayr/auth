@@ -87,7 +87,7 @@ func (r *repo) GetUser(ctx context.Context, userID int64) (*model.User, error) {
 	var user modelRepo.User
 
 	for rows.Next() {
-		err = rows.Scan(&userID, &user.Name, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
+		err = rows.Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			log.Printf("%s: failed to scan user: %v", op, err)
 			return nil, err
