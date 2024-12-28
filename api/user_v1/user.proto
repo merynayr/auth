@@ -10,10 +10,10 @@ import "google/protobuf/wrappers.proto";
 option go_package = "github.com/merynayr/user/pkg/user_v1;user_v1";
 
 service UserV1 {
-  rpc Create(CreateUserRequest) returns (CreateUserResponse);
-  rpc Get(GetUserRequest) returns (GetUserResponse);
-  rpc Update(UpdateUserRequest) returns (google.protobuf.Empty);
-  rpc Delete(DeleteUserRequest) returns (google.protobuf.Empty);
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
 }
 
 enum role {

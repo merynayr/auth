@@ -42,7 +42,7 @@ func (r *repo) CreateUser(ctx context.Context, user *model.User) (int64, error) 
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(nameColumn, emailColumn, passwordColumn, roleColumn, createdAtColumn, updatedAtColumn).
-		Values(user.Name, user.Email, user.Password, user.Role, user.CreatedAt, time.Now()).
+		Values(user.Name, user.Email, user.Password, user.Role, time.Now(), user.UpdatedAt).
 		Suffix("RETURNING id")
 
 	query, args, err := builderInsert.ToSql()
@@ -87,7 +87,7 @@ func (r *repo) GetUser(ctx context.Context, userID int64) (*model.User, error) {
 	var user modelRepo.User
 
 	for rows.Next() {
-		err = rows.Scan(&userID, &user.Name, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
+		err = rows.Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			log.Printf("%s: failed to scan user: %v", op, err)
 			return nil, err
