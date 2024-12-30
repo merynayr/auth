@@ -6,7 +6,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/merynayr/auth/internal/client/db"
 	"github.com/merynayr/auth/internal/model"
 	"github.com/merynayr/auth/internal/repository"
 	"github.com/merynayr/auth/internal/repository/user/converter"
@@ -27,11 +27,11 @@ const (
 
 // Структура репо с клиентом базы данных (интерфейсом)
 type repo struct {
-	db *pgxpool.Pool
+	db db.Client
 }
 
 // NewRepository возвращает новый объект репо слоя
-func NewRepository(db *pgxpool.Pool) repository.UserRepository {
+func NewRepository(db db.Client) repository.UserRepository {
 	return &repo{db: db}
 }
 
@@ -39,20 +39,25 @@ func (r *repo) CreateUser(ctx context.Context, user *model.User) (int64, error) 
 	op := "CreateUser"
 	log.Printf("%s %v", op, user.ID)
 
-	builderInsert := sq.Insert(tableName).
+	query, args, err := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(nameColumn, emailColumn, passwordColumn, roleColumn, createdAtColumn, updatedAtColumn).
 		Values(user.Name, user.Email, user.Password, user.Role, time.Now(), user.UpdatedAt).
-		Suffix("RETURNING id")
+		Suffix("RETURNING id").
+		ToSql()
 
-	query, args, err := builderInsert.ToSql()
 	if err != nil {
 		log.Printf("%s: failed to create builder: %v", op, err)
 		return 0, err
 	}
 
+	q := db.Query{
+		Name:     "user_repository.CreateUser",
+		QueryRaw: query,
+	}
+
 	var userID int64
-	err = r.db.QueryRow(ctx, query, args...).Scan(&userID)
+	err = r.db.DB().ScanOneContext(ctx, &userID, q, args...)
 	if err != nil {
 		log.Printf("%s: failed to insert user: %v", op, err)
 		return 0, err
@@ -66,32 +71,27 @@ func (r *repo) GetUser(ctx context.Context, userID int64) (*model.User, error) {
 	op := "GetUser"
 	log.Printf("[%s] request data | id: %v", op, userID)
 
-	builderGet := sq.Select(idColumn, nameColumn, emailColumn, roleColumn, createdAtColumn, updatedAtColumn).
+	query, args, err := sq.Select(idColumn, nameColumn, emailColumn, roleColumn, createdAtColumn, updatedAtColumn).
 		From(tableName).
 		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{idColumn: userID})
-
-	query, args, err := builderGet.ToSql()
+		Where(sq.Eq{idColumn: userID}).
+		ToSql()
 
 	if err != nil {
 		log.Printf("%s: failed to create builder: %v", op, err)
 		return nil, err
 	}
 
-	rows, err := r.db.Query(ctx, query, args...)
-	if err != nil {
-		log.Printf("%s: failed to select user: %v", op, err)
-		return nil, err
+	q := db.Query{
+		Name:     "user_repository.GetById",
+		QueryRaw: query,
 	}
 
 	var user modelRepo.User
-
-	for rows.Next() {
-		err = rows.Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
-		if err != nil {
-			log.Printf("%s: failed to scan user: %v", op, err)
-			return nil, err
-		}
+	err = r.db.DB().ScanOneContext(ctx, &user, q, args...)
+	if err != nil {
+		log.Printf("%s: failed to select user: %v", op, err)
+		return nil, err
 	}
 
 	log.Printf("%s: selected user %d", op, userID)

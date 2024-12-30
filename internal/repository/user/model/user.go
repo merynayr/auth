@@ -8,7 +8,7 @@ import (
 // User модельпользователя в репо слое
 type User struct {
 	ID        int64        `db:"id"`
-	Name      string       `db:"name"`
+	Name      string       `db:"username"`
 	Email     string       `db:"email"`
 	Password  string       `db:"password"`
 	Role      int32        `db:"role"`
