@@ -83,7 +83,7 @@ func (r *repo) GetUser(ctx context.Context, userID int64) (*model.User, error) {
 	}
 
 	q := db.Query{
-		Name:     "user_repository.GetById",
+		Name:     "user_repository.GetUser",
 		QueryRaw: query,
 	}
 
