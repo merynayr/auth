@@ -46,3 +46,28 @@ func ToDescUserFromService(user *model.User) *desc.GetUserResponse {
 		},
 	}
 }
+
+// ToUserFromDescUpdate конвертирует модель обновления пользователя API слов в
+// модель сервисного слоя
+func ToUserFromDescUpdate(user *desc.UpdateUserRequest) *model.UserUpdate {
+	if user == nil {
+		return nil
+	}
+
+	u := &model.UserUpdate{}
+	u.ID = user.Info.Id.Value
+
+	var name, email string
+
+	if user.Info.Name != nil {
+		name = user.Info.Name.GetValue()
+		u.Name = &name
+	}
+
+	if user.Info.Email != nil {
+		email = user.Info.Email.GetValue()
+		u.Email = &email
+	}
+
+	return u
+}
