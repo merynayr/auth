@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// User модельпользователя в репо слое
+// User модель пользователя в репо слое
 type User struct {
 	ID        int64        `db:"id"`
 	Name      string       `db:"username"`

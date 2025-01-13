@@ -13,6 +13,6 @@ WORKDIR /root/
 
 COPY --from=builder /github.com/merynayr/auth/source/bin/test_server .
 
-COPY prod.env .
+COPY local.env .
 
 CMD ["./test_server", "-config-path=local.env"]
