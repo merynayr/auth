@@ -202,7 +202,7 @@ func (r *repo) IsExistByID(ctx context.Context, userID int64) (bool, error) {
 	op := "IsExistByID"
 	log.Printf("[%s] request data | id: %v", op, userID)
 
-	query, args, err := sq.Select(idColumn).
+	query, args, err := sq.Select("1").
 		From(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: userID}).

@@ -55,18 +55,26 @@ func ToUserFromDescUpdate(user *desc.UpdateUserRequest) *model.UserUpdate {
 	}
 
 	u := &model.UserUpdate{}
-	u.ID = user.Info.Id.Value
+	if user.Info.Id != nil {
+		u.ID = user.Info.Id.GetValue()
+	} else {
+		return nil
+	}
 
 	var name, email string
 
 	if user.Info.Name != nil {
 		name = user.Info.Name.GetValue()
 		u.Name = &name
+	} else {
+		return nil
 	}
 
 	if user.Info.Email != nil {
 		email = user.Info.Email.GetValue()
 		u.Email = &email
+	} else {
+		return nil
 	}
 
 	return u
