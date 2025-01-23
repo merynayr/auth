@@ -2,10 +2,10 @@ package user
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/merynayr/auth/internal/converter"
 	desc "github.com/merynayr/auth/pkg/user_v1"
-	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -14,12 +14,12 @@ import (
 func (i *API) UpdateUser(ctx context.Context, req *desc.UpdateUserRequest) (*emptypb.Empty, error) {
 	convertedReq := converter.ToUserFromDescUpdate(req)
 	if convertedReq == nil {
-		return nil, errors.New("failed to convert user from desc")
+		return nil, fmt.Errorf("failed to convert user from desc")
 	}
 
 	_, err := i.userService.UpdateUser(ctx, convertedReq)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to update user")
+		return nil, fmt.Errorf("failed to update user")
 	}
 
 	return &emptypb.Empty{}, nil

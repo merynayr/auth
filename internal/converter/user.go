@@ -14,13 +14,38 @@ func ToUserFromDescUser(user *desc.CreateUserRequest) *model.User {
 		return nil
 	}
 
-	return &model.User{
-		Name:            user.Info.Name,
-		Email:           user.Info.Email,
-		Password:        user.Info.Password,
-		PasswordConfirm: user.Info.PasswordConfirm,
-		Role:            int32(user.Info.Role), // по умолчанию роль 1 (USER)
+	u := &model.User{}
+
+	if user.Info.Name != "" {
+		u.Name = user.Info.Name
+	} else {
+		return nil
 	}
+
+	if user.Info.Email != "" {
+		u.Email = user.Info.Email
+	} else {
+		return nil
+	}
+
+	if user.Info.Password != "" {
+		u.Password = user.Info.Password
+	} else {
+		return nil
+	}
+
+	if user.Info.PasswordConfirm != "" {
+		u.PasswordConfirm = user.Info.PasswordConfirm
+	} else {
+		return nil
+	}
+
+	if user.Info.Role == 0 || user.Info.Role == 1 {
+		u.Role = int32(user.Info.Role)
+	} else {
+		return nil
+	}
+	return u
 }
 
 // ToDescUserFromService конвертирует сервисную модель пользователя в

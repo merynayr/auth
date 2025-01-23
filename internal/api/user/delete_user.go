@@ -5,7 +5,6 @@ import (
 
 	desc "github.com/merynayr/auth/pkg/user_v1"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -13,7 +12,7 @@ import (
 func (i *API) DeleteUser(ctx context.Context, req *desc.DeleteUserRequest) (*emptypb.Empty, error) {
 	_, err := i.userService.DeleteUser(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to delete user")
+		return nil, err
 	}
 
 	return &emptypb.Empty{}, nil
