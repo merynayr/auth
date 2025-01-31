@@ -16,7 +16,6 @@ import (
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestUpdateUser(t *testing.T) {
@@ -41,9 +40,9 @@ func TestUpdateUser(t *testing.T) {
 
 		req = &desc.UpdateUserRequest{
 			Info: &desc.UpdateUserInfo{
-				Id:    wrapperspb.Int64(id),
-				Name:  wrapperspb.String(name),
-				Email: wrapperspb.String(email),
+				Id:    id,
+				Name:  name,
+				Email: email,
 			},
 		}
 

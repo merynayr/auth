@@ -2,18 +2,58 @@ syntax = "proto3";
 
 package user_v1;
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
-import "google/protobuf/wrappers.proto";
-
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto"; 
+import "validate/validate.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/merynayr/user/pkg/user_v1;user_v1";
 
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+      title: "User API"
+      version: "1.0.0"
+      contact: {
+          name: "Dmitry Boyarkin"
+          email: "boyarkin_dima2@mail.ru"
+      };
+  };
+
+  host: "localhost:8091",
+  schemes: HTTP,
+  schemes: HTTPS,
+  consumes: "application/json",
+  produces: "application/json",
+};
+
 service UserV1 {
-  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-  rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
-  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+  // Создает нового пользователя
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/user/v1/create"
+      body: "*"
+    };
+  }
+  // Получает данные пользователя по id
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {
+      get: "/user/v1/get/{id}"
+    };
+  }
+  // Обновляет данные о пользователе
+  rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      patch: "/user/v1/update"
+      body: "*"
+    };
+  }
+  // Удаляет пользователя по id
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/user/v1/delete/{id}"
+    };
+  }
 }
 
 enum role {
@@ -22,11 +62,15 @@ enum role {
 }
 
 message CreateUserInfo {
-  string name = 1;
-  string email = 2;
+  string name = 1 [(validate.rules).string = {
+    pattern:   "^[A-Za-z]+( [A-Za-z]+)*$",
+    min_len: 3,
+    max_len: 64,
+  }];
+  string email = 2 [(validate.rules).string.email = true];
   string password = 3;
   string password_confirm = 4;
-  role role = 5;
+  role role = 5 [(validate.rules).enum = {in: [0, 1]}];
 }
 
 message User {
@@ -39,9 +83,13 @@ message User {
 }
 
 message UpdateUserInfo {
-  google.protobuf.Int64Value id = 1;
-  google.protobuf.StringValue name = 2;
-  google.protobuf.StringValue email = 3;
+  int64 id = 1;
+  string name = 2 [(validate.rules).string = {
+    pattern:   "^[A-Za-z]+( [A-Za-z]+)*$",
+    min_len: 3,
+    max_len: 64,
+  }];
+  string email = 3 [(validate.rules).string.email = true];
 }
 
 message CreateUserRequest { 

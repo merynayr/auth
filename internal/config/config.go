@@ -24,3 +24,13 @@ type GRPCConfig interface {
 type PGConfig interface {
 	DSN() string
 }
+
+// HTTPConfig is interface of a http config
+type HTTPConfig interface {
+	Address() string
+}
+
+// SwaggerConfig is interface of a swagger config
+type SwaggerConfig interface {
+	Address() string
+}
