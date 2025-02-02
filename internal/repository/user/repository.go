@@ -14,6 +14,7 @@ import (
 	"github.com/merynayr/auth/internal/repository"
 	"github.com/merynayr/auth/internal/repository/user/converter"
 	modelRepo "github.com/merynayr/auth/internal/repository/user/model"
+	"github.com/merynayr/auth/internal/utils/hash"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -43,7 +44,15 @@ func (r *repo) CreateUser(ctx context.Context, user *model.User) (int64, error) 
 	op := "CreateUser"
 	log.Printf("%s %v", op, user.ID)
 
-	exist, err := r.IsEmailExist(ctx, user.Email)
+	exist, err := r.IsNameExist(ctx, user.Name)
+	if err != nil {
+		return 0, err
+	}
+	if exist {
+		return 0, fmt.Errorf("user with name %s already exists", user.Name)
+	}
+
+	exist, err = r.IsEmailExist(ctx, user.Email)
 	if err != nil {
 		return 0, err
 	}
@@ -51,10 +60,15 @@ func (r *repo) CreateUser(ctx context.Context, user *model.User) (int64, error) 
 		return 0, fmt.Errorf("user with email %s already exists", user.Email)
 	}
 
+	passHash, err := hash.EncryptPassword(user.Password)
+	if err != nil {
+		return 0, err
+	}
+
 	query, args, err := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(nameColumn, emailColumn, passwordColumn, roleColumn, createdAtColumn, updatedAtColumn).
-		Values(user.Name, user.Email, user.Password, user.Role, time.Now(), user.UpdatedAt).
+		Values(user.Name, user.Email, passHash, user.Role, time.Now(), user.UpdatedAt).
 		Suffix("RETURNING id").
 		ToSql()
 
@@ -79,7 +93,7 @@ func (r *repo) CreateUser(ctx context.Context, user *model.User) (int64, error) 
 	return userID, nil
 }
 
-func (r *repo) GetUser(ctx context.Context, userID int64) (*model.User, error) {
+func (r *repo) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
 	op := "GetUser"
 	log.Printf("[%s] request data | id: %v", op, userID)
 
@@ -115,6 +129,41 @@ func (r *repo) GetUser(ctx context.Context, userID int64) (*model.User, error) {
 
 	log.Printf("%s: selected user %d", op, userID)
 	return converter.ToUserFromRepo(&user), nil
+}
+
+// GetUserByName получает из БД информацию пользователя
+func (r *repo) GetUserByName(ctx context.Context, name string) (*model.UserInfo, error) {
+	exist, err := r.IsNameExist(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exist {
+		return nil, fmt.Errorf("user with name %s doesn't exist", name)
+	}
+
+	query, args, err := sq.Select(nameColumn, passwordColumn, roleColumn).
+		From(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{nameColumn: name}).
+		Limit(1).ToSql()
+
+	if err != nil {
+		return nil, err
+	}
+
+	q := db.Query{
+		Name:     "user_repository.getUserByName",
+		QueryRaw: query,
+	}
+
+	var user modelRepo.UserInfo
+	err = r.db.DB().ScanOneContext(ctx, &user, q, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.ToUserInfoFromRepo(&user), nil
 }
 
 // UpdateUser обновляет данные пользователя по id
@@ -256,6 +305,37 @@ func (r *repo) IsEmailExist(ctx context.Context, email string) (bool, error) {
 			return false, nil
 		}
 		log.Println(err)
+
+		return false, err
+	}
+
+	return true, nil
+}
+
+// IsNameExist проверяет, существует ли в БД указанный name
+func (r *repo) IsNameExist(ctx context.Context, name string) (bool, error) {
+	query, args, err := sq.Select("1").
+		From(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{nameColumn: name}).
+		Limit(1).ToSql()
+
+	if err != nil {
+		return false, err
+	}
+
+	q := db.Query{
+		Name:     "user_repository.IsNameExist",
+		QueryRaw: query,
+	}
+
+	var one int
+
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&one)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
 
 		return false, err
 	}

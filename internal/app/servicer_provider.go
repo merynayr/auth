@@ -13,9 +13,15 @@ import (
 	"github.com/merynayr/auth/internal/repository"
 	"github.com/merynayr/auth/internal/service"
 
+	accessAPI "github.com/merynayr/auth/internal/api/access"
+	authAPI "github.com/merynayr/auth/internal/api/auth"
 	userAPI "github.com/merynayr/auth/internal/api/user"
-	userRepository "github.com/merynayr/auth/internal/repository/user"
+
+	accessService "github.com/merynayr/auth/internal/service/access"
+	authService "github.com/merynayr/auth/internal/service/auth"
 	userService "github.com/merynayr/auth/internal/service/user"
+
+	userRepository "github.com/merynayr/auth/internal/repository/user"
 )
 
 // Структура приложения со всеми зависимости
@@ -24,6 +30,8 @@ type serviceProvider struct {
 	grpcConfig    config.GRPCConfig
 	httpConfig    config.HTTPConfig
 	swaggerConfig config.SwaggerConfig
+	authConfig    config.AuthConfig
+	accessConfig  config.AccessConfig
 
 	dbClient  db.Client
 	txManager db.TxManager
@@ -31,6 +39,12 @@ type serviceProvider struct {
 	userRepository repository.UserRepository
 	userService    service.UserService
 	userAPI        *userAPI.API
+
+	authService service.AuthService
+	authAPI     *authAPI.API
+
+	accessService service.AccessService
+	accessAPI     *accessAPI.API
 }
 
 // NewServiceProvider возвращает новый объект API слоя
@@ -86,6 +100,34 @@ func (s *serviceProvider) SwaggerConfig() config.SwaggerConfig {
 	return s.swaggerConfig
 }
 
+// AuthConfig инициализирует конфиг auth сервиса
+func (s *serviceProvider) AuthConfig() config.AuthConfig {
+	if s.authConfig == nil {
+		cfg, err := env.NewAuthConfig()
+		if err != nil {
+			log.Fatalf("failed to get auth config")
+		}
+
+		s.authConfig = cfg
+	}
+
+	return s.authConfig
+}
+
+// AccessConfig инициализирует конфиг access конфига
+func (s *serviceProvider) AccessConfig() config.AccessConfig {
+	if s.accessConfig == nil {
+		cfg, err := env.NewAccessConfig()
+		if err != nil {
+			log.Fatalf("failed to get access service")
+		}
+
+		s.accessConfig = cfg
+	}
+
+	return s.accessConfig
+}
+
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
 	if s.dbClient == nil {
 		cl, err := pg.New(ctx, s.PGConfig().DSN())
@@ -132,10 +174,54 @@ func (s *serviceProvider) UserService(ctx context.Context) service.UserService {
 	return s.userService
 }
 
+// AuthService иницилизирует сервисный слой auth
+func (s *serviceProvider) AuthService(ctx context.Context) service.AuthService {
+	if s.authService == nil {
+		s.authService = authService.NewService(
+			s.UserRepository(ctx),
+			s.AuthConfig(),
+		)
+	}
+
+	return s.authService
+}
+
+// AccessService иницилизирует сервисный слой access
+func (s *serviceProvider) AccessService(_ context.Context) service.AccessService {
+	if s.accessService == nil {
+		uMap, err := s.AccessConfig().UserAccessesMap()
+		if err != nil {
+			log.Fatalf("failed to get user access map: %v", err)
+		}
+
+		s.accessService = accessService.NewService(uMap, s.AuthConfig())
+	}
+
+	return s.accessService
+}
+
 func (s *serviceProvider) UserAPI(ctx context.Context) *userAPI.API {
 	if s.userAPI == nil {
 		s.userAPI = userAPI.NewAPI(s.UserService(ctx))
 	}
 
 	return s.userAPI
+}
+
+// AuthAPI инициализирует api слой auth
+func (s *serviceProvider) AuthAPI(ctx context.Context) *authAPI.API {
+	if s.authAPI == nil {
+		s.authAPI = authAPI.NewAPI(s.AuthService(ctx))
+	}
+
+	return s.authAPI
+}
+
+// AccessAPI инициализирует api слой access
+func (s *serviceProvider) AccessAPI(ctx context.Context) *accessAPI.API {
+	if s.accessAPI == nil {
+		s.accessAPI = accessAPI.NewAPI(s.AccessService(ctx))
+	}
+
+	return s.accessAPI
 }

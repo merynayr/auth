@@ -15,3 +15,10 @@ type User struct {
 	CreatedAt time.Time    `db:"created_at"`
 	UpdatedAt sql.NullTime `db:"updated_at"`
 }
+
+// UserInfo модель пользователя для Авторизации
+type UserInfo struct {
+	Name     string `db:"username"`
+	Password string `db:"password"`
+	Role     int64  `db:"role"`
+}

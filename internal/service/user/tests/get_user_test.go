@@ -66,7 +66,7 @@ func TestGetUser(t *testing.T) {
 			err:  nil,
 			UserRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
 				mock := repoMocks.NewUserRepositoryMock(mc)
-				mock.GetUserMock.Expect(ctx, req).Return(res, nil)
+				mock.GetUserByIDMock.Expect(ctx, req).Return(res, nil)
 				return mock
 			},
 		},
@@ -80,7 +80,7 @@ func TestGetUser(t *testing.T) {
 			err:  repoErr,
 			UserRepositoryMock: func(mc *minimock.Controller) repository.UserRepository {
 				mock := repoMocks.NewUserRepositoryMock(mc)
-				mock.GetUserMock.Expect(ctx, req).Return(nil, repoErr)
+				mock.GetUserByIDMock.Expect(ctx, req).Return(nil, repoErr)
 				return mock
 			},
 		},

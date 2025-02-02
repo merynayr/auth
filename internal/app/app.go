@@ -19,7 +19,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
+	descAccess "github.com/merynayr/auth/pkg/access_v1"
+	descAuth "github.com/merynayr/auth/pkg/auth_v1"
 	descUser "github.com/merynayr/auth/pkg/user_v1"
+
 	_ "github.com/merynayr/auth/statik" //
 )
 
@@ -130,6 +133,8 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 	reflection.Register(a.grpcServer)
 
 	descUser.RegisterUserV1Server(a.grpcServer, a.serviceProvider.UserAPI(ctx))
+	descAuth.RegisterAuthV1Server(a.grpcServer, a.serviceProvider.AuthAPI(ctx))
+	descAccess.RegisterAccessV1Server(a.grpcServer, a.serviceProvider.AccessAPI(ctx))
 
 	return nil
 }

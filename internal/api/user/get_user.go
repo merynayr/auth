@@ -16,7 +16,6 @@ func (a *API) GetUser(ctx context.Context, req *desc.GetUserRequest) (*desc.GetU
 	}
 	convertedUser := converter.ToDescUserFromService(userObj)
 	if convertedUser == nil {
-
 		return nil, fmt.Errorf("failed to convert desc from user")
 	}
 
