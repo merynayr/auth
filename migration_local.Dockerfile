@@ -8,12 +8,7 @@ RUN apk update && \
 ADD https://github.com/pressly/goose/releases/download/v3.14.0/goose_linux_x86_64 /bin/goose
 RUN chmod +x /bin/goose
 
-WORKDIR /root
+COPY migrations /migrations
 
-ADD migrations/*.sql migrations/
-ADD migration_local.sh .
-ADD local.env .
+CMD ["sh", "-c", "sleep 2 && goose -dir \"${MIGRATION_DIR}\" postgres \"${MIGRATION_DSN}\" up"]
 
-RUN chmod +x migration_local.sh
-
-ENTRYPOINT ["bash", "migration_local.sh"]

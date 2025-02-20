@@ -9,6 +9,7 @@ install-golangci-lint:
 	GOBIN=$(LOCAL_BIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
 
 lint:
+	go mod tidy
 	$(LOCAL_BIN)/golangci-lint run ./... --config .golangci.pipeline.yaml
 
 install-deps:
@@ -118,3 +119,25 @@ vendor-proto:
 		mv vendor.protogen/openapiv2/protoc-gen-openapiv2/options/*.proto vendor.protogen/protoc-gen-openapiv2/options &&\
 		rm -rf vendor.protogen/openapiv2 ;\
 	fi
+
+
+grpc-load-test:
+	ghz \
+		--proto api/user_v1/user.proto \
+		--import-paths vendor.protogen/\
+		--call user_v1.UserV1.GetUser \
+		--data '{"id": "1"}' \
+		--rps 100 \
+		--total 3000 \
+		--insecure \
+		localhost:50051
+
+grpc-error-load-test:
+	ghz \
+		--proto api/auth_v1/auth.proto \
+		--call auth_v1.AuthV1.Login \
+		--data '{"username": "testuser", "password":"2"}' \
+		--rps 100 \
+		--total 3000 \
+		--insecure \
+		localhost:50051

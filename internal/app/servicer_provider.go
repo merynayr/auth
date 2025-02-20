@@ -26,12 +26,13 @@ import (
 
 // Структура приложения со всеми зависимости
 type serviceProvider struct {
-	pgConfig      config.PGConfig
-	grpcConfig    config.GRPCConfig
-	httpConfig    config.HTTPConfig
-	swaggerConfig config.SwaggerConfig
-	authConfig    config.AuthConfig
-	accessConfig  config.AccessConfig
+	pgConfig         config.PGConfig
+	grpcConfig       config.GRPCConfig
+	httpConfig       config.HTTPConfig
+	swaggerConfig    config.SwaggerConfig
+	authConfig       config.AuthConfig
+	accessConfig     config.AccessConfig
+	prometheusConfig config.PrometheusConfig
 
 	dbClient  db.Client
 	txManager db.TxManager
@@ -126,6 +127,19 @@ func (s *serviceProvider) AccessConfig() config.AccessConfig {
 	}
 
 	return s.accessConfig
+}
+
+func (s *serviceProvider) PrometheusConfig() config.PrometheusConfig {
+	if s.prometheusConfig == nil {
+		cfg, err := env.NewPrometheusConfig()
+		if err != nil {
+			log.Fatalf("failed to get prometheus config")
+		}
+
+		s.prometheusConfig = cfg
+	}
+
+	return s.prometheusConfig
 }
 
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {

@@ -10,9 +10,13 @@ import (
 	"sync"
 	"time"
 
+	grpcMW "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/merynayr/auth/internal/closer"
 	"github.com/merynayr/auth/internal/config"
+	"github.com/merynayr/auth/internal/interceptor"
+	"github.com/merynayr/auth/internal/metric"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
@@ -60,7 +64,7 @@ func (a *App) Run() error {
 	}()
 
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 
 	go func() {
 		defer wg.Done()
@@ -86,6 +90,15 @@ func (a *App) Run() error {
 		err := a.runSwaggerServer()
 		if err != nil {
 			log.Fatalf("failed to run Swagger server: %v", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		err := a.runPrometheusServer()
+		if err != nil {
+			log.Fatalf("failed to run Prometheus server: %v", err)
 		}
 	}()
 
@@ -128,7 +141,17 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 func (a *App) initGRPCServer(ctx context.Context) error {
-	a.grpcServer = grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	metric.Init(ctx)
+
+	a.grpcServer = grpc.NewServer(
+		grpc.UnaryInterceptor(
+			grpcMW.ChainUnaryServer(
+				interceptor.MetricsInterceptor,
+				interceptor.ValidateInterceptor,
+			),
+		),
+		grpc.Creds(insecure.NewCredentials()),
+	)
 
 	reflection.Register(a.grpcServer)
 
@@ -216,6 +239,26 @@ func (a *App) runSwaggerServer() error {
 	log.Printf("Swagger server is running on %s", a.serviceProvider.SwaggerConfig().Address())
 
 	err := a.swaggerServer.ListenAndServe()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) runPrometheusServer() error {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	prometheusServer := &http.Server{
+		Addr:              a.serviceProvider.PrometheusConfig().Address(),
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	log.Printf("Prometheus server is running on %s", a.serviceProvider.PrometheusConfig().Address())
+
+	err := prometheusServer.ListenAndServe()
 	if err != nil {
 		return err
 	}
